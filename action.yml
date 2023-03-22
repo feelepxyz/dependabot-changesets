@@ -1,0 +1,60 @@
+name: 'dependabot-changesets'
+description: 'Autogenerate changesets for dependabot pull requests'
+author: 'Philip Harrison <philip@mailharrison.com>'
+branding:
+  icon: "edit"
+  color: "blue"
+on: [pull_request]
+inputs:
+  github-token:
+    required: false
+    default: ${{ github.token }}
+  commit_message:
+    description: Commit message
+    required: false
+    default: Add changeset for dependabot updates
+  branch:
+    description: Git branch name, where changes should be pushed too. Required if Action is used on the `pull_request` event
+    required: false
+    default: ${{ github.head_ref }}
+  repository:
+    description: Local file path to the git repository. Defaults to the current directory (`.`)
+    required: false
+    default: '${{ github.repository }}'
+  commit_user_name:
+    description: Name used for the commit user
+    required: false
+    default: github-actions[bot]
+  commit_user_email:
+    description: Email address used for the commit user
+    required: false
+    default: 41898282+github-actions[bot]@users.noreply.github.com
+  commit_author:
+    description: Value used for the commit author. Defaults to the username of whoever triggered this workflow run.
+    required: false
+    default: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3
+      with:
+        repository: $${{ inputs.repository }}
+        ref: ${{ inputs.branch }}
+        token: $${{ inputs.github-token }}
+    - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
+      with:
+        node-version: 16
+    - name: Dependabot metadata
+      id: dependabot-metadata
+      uses: dependabot/fetch-metadata@4de7a6c08ce727a42e0adbbdc345f761a01240ce # v1
+      with:
+        github-token: "${{ inputs.github-token }}"
+    - run: node dist/index.js
+      with:
+        dependabot-metadata: ${{ toJSON(steps.dependabot-metadata.outputs) }}
+    - run: |
+        git config --local user.name ${{ inputs.commit_user_name }}
+        git config --local user.email ${{ inputs.commit_user_email }}
+        git add .changeset
+        git commit --signoff --author="${{ inputs.commit_author }}" -m "${{ inputs.commit_message }}"
+        git push --set-upstream origin "HEAD:${{ inputs.branch }}"
