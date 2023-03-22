@@ -52,10 +52,10 @@ runs:
       uses: dependabot/fetch-metadata@4de7a6c08ce727a42e0adbbdc345f761a01240ce # v1
       with:
         github-token: "${{ inputs.github-token }}"
-    - run: node dist/index.js
+    - run: node "${{ github.action_path }}/dist/index.js"
       shell: bash
+      working-directory: repository
       env:
-        CWD: repository
         DEPENDABOT_METADATA: ${{ steps.dependabot-metadata.outputs.updated-dependencies-json }}
     - run: |
         git config --local user.name ${{ inputs.commit_user_name }}
