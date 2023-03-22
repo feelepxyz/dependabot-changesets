@@ -36,6 +36,8 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - run: echo $GITHUB_WORKSPACE
+      shell: bash
     - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3
       with:
         path: 'repository'
