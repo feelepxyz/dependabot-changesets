@@ -31,7 +31,7 @@ async function run(): Promise<void> {
         "If you expected there to be changesets, you should check git history for when the folder was removed to ensure you do not lose any configuration."
       );
     }
-    const metadata: string = core.getInput('dependabot-metadata')
+    const metadata: string = process.env.DEPENDABOT_METADATA || ''
     const metadataObject = JSON.parse(metadata)
     const packages: any = await getPackages(cwd);
     if (packages.packages.length === 0) {
