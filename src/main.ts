@@ -24,7 +24,7 @@ function isListablePackage(config: Config, packageJson: PackageJSON) {
 
 async function run(): Promise<void> {
   try {
-    const cwd = process.cwd()
+    const cwd = process.env.cwd || process.cwd()
     if (!fs.existsSync(path.resolve(cwd, ".changeset"))) {
       throw new Error("There is no .changeset folder.\n" +
         "If this is the first time `changesets` have been used in this project, run `yarn changeset init` to get set up.\n" +
@@ -32,7 +32,8 @@ async function run(): Promise<void> {
       );
     }
     const metadata: string = process.env.DEPENDABOT_METADATA || ''
-    const metadataObject = JSON.parse(metadata)
+    core.debug(metadata)
+    const updatedDeps = JSON.parse(metadata)
     const packages: any = await getPackages(cwd);
     if (packages.packages.length === 0) {
       throw new Error(
@@ -50,10 +51,12 @@ async function run(): Promise<void> {
       .filter((pkg) => isListablePackage(config, pkg.packageJson))
       .map((pkg) => pkg.packageJson.name);
 
-    const type = metadataObject['update-type'].replace('version-update:semver-', '') || 'none'
-    const dependencyNames = metadataObject['dependency-names']
-    const previousVersion = metadataObject['previous-version']
-    const newVersion = metadataObject['new-version']
+    // TODO: handle multiple dependencies
+    const updatedDep = updatedDeps[0]
+    const type = updatedDep['updateType'].replace('version-update:semver-', '') || 'none'
+    const dependencyNames = updatedDep['dependencyName']
+    const previousVersion = updatedDep['prevVersion']
+    const newVersion = updatedDep['newVersion']
     const summary = `Bump ${dependencyNames.join(', ')} from ${previousVersion} to ${newVersion}`
     const releases = changedPackagesNames.map((name: string) => ({ name, type }))
     const newChangeset: Changeset = {
@@ -61,8 +64,7 @@ async function run(): Promise<void> {
       releases
     }
     await writeChangeset(newChangeset, cwd);
-    core.debug(JSON.stringify(newChangeset, null, 2)))
-    core.debug(metadata)
+    core.debug(JSON.stringify(newChangeset, null, 2))
     core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
