@@ -40,7 +40,6 @@ runs:
       shell: bash
     - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3
       with:
-        path: 'repository'
         repository: ${{ inputs.repository }}
         ref: ${{ inputs.branch }}
         token: ${{ inputs.github-token }}
@@ -54,7 +53,6 @@ runs:
         github-token: "${{ inputs.github-token }}"
     - run: node "${{ github.action_path }}/dist/index.js"
       shell: bash
-      working-directory: repository
       env:
         DEPENDABOT_METADATA: ${{ steps.dependabot-metadata.outputs.updated-dependencies-json }}
     - run: |
@@ -63,5 +61,4 @@ runs:
         git add .changeset
         git commit --signoff --author="${{ inputs.commit_author }}" -m "${{ inputs.commit_message }}"
         git push --set-upstream origin "HEAD:${{ inputs.branch }}"
-      working-directory: repository
       shell: bash
