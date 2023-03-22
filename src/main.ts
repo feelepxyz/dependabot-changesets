@@ -24,7 +24,8 @@ function isListablePackage(config: Config, packageJson: PackageJSON) {
 
 async function run(): Promise<void> {
   try {
-    const cwd = process.env.cwd || process.cwd()
+    const cwd = process.cwd()
+    core.debug(cwd)
     if (!fs.existsSync(path.resolve(cwd, ".changeset"))) {
       throw new Error("There is no .changeset folder.\n" +
         "If this is the first time `changesets` have been used in this project, run `yarn changeset init` to get set up.\n" +
@@ -34,6 +35,7 @@ async function run(): Promise<void> {
     const metadata: string = process.env.DEPENDABOT_METADATA || ''
     core.debug(metadata)
     const updatedDeps = JSON.parse(metadata)
+    core.debug(updatedDeps)
     const packages: any = await getPackages(cwd);
     if (packages.packages.length === 0) {
       throw new Error(
@@ -41,6 +43,7 @@ async function run(): Promise<void> {
       );
     }
     const config: Config = await read(cwd, packages);
+    core.debug(config)
     const changedPackages = await git.getChangedPackagesSinceRef({
       cwd,
       ref: config.baseBranch,
