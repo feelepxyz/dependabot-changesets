@@ -29,10 +29,6 @@ inputs:
     description: Email address used for the commit user
     required: false
     default: github-actions@github.com
-  commit_author:
-    description: Value used for the commit author. Defaults to the username of whoever triggered this workflow run.
-    required: false
-    default: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
   default_semver_update_type:
     description: Default semver type for dependabot updates
     required: false
@@ -65,6 +61,6 @@ runs:
         git config --local user.name "${{ inputs.commit_user_name }}"
         git config --local user.email "${{ inputs.commit_user_email }}"
         git add .changeset
-        git commit --signoff --author="${{ inputs.commit_author }}" -m "${{ inputs.commit_message }}"
+        git commit --signoff -m "${{ inputs.commit_message }}"
         git push --set-upstream origin "HEAD:${{ inputs.branch }}"
       shell: bash

@@ -61,7 +61,7 @@ async function run(cwd = process.cwd()): Promise<void> {
     }
     const config = await read(cwd, packages);
     core.debug(`Found changesets config: ${JSON.stringify(config)}`);
-    const changedChagesets = await getChangesets(cwd, `origin/${config.baseBranch}`);
+    const changedChagesets = await getChangesets(cwd, `origin/${config.baseBranch.replace('origin/', '')}`);
     const changedSummaries = changedChagesets.map(
       (changeset) => changeset.summary
     );
@@ -69,7 +69,7 @@ async function run(cwd = process.cwd()): Promise<void> {
 
     const changedPackages = await git.getChangedPackagesSinceRef({
       cwd,
-      ref: `origin/${config.baseBranch}`,
+      ref: `origin/${config.baseBranch.replace('origin/', '')}`,
       changedFilePatterns: config.changedFilePatterns,
     });
     const listableChanges = changedPackages.filter((pkg) =>
