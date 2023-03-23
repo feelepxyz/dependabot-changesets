@@ -61,6 +61,10 @@ runs:
         git config --local user.name "${{ inputs.commit_user_name }}"
         git config --local user.email "${{ inputs.commit_user_email }}"
         git add .changeset
-        git commit --signoff -m "${{ inputs.commit_message }}"
-        git push --set-upstream origin "HEAD:${{ inputs.branch }}"
+        if ! git diff-index --quiet HEAD; then
+          git commit --signoff -m "${{ inputs.commit_message }}"
+          git push --set-upstream origin "HEAD:${{ inputs.branch }}"
+        else
+          echo "Found no changes to commit"
+        fi
       shell: bash
