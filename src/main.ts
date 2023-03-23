@@ -108,6 +108,9 @@ async function run(cwd = process.cwd()): Promise<void> {
       return;
     }
 
+    // TODO: Better handling of monorepos with multiple packages?
+    // could maybe associate changed packages with the updated dependency but not sure if this means
+    // we need to create multiple changelogs for each package that has been updated?
     const type = process.env.DEFAULT_SEMVER_UPDATE_TYPE || "patch";
     const releases = changedPackagesNames.map((name: string) => ({
       name,
