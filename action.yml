@@ -8,7 +8,7 @@ on: [pull_request]
 inputs:
   github-token:
     required: false
-    default: ${{ github.token }}
+    default: "${{ github.token }}"
   commit_message:
     description: Commit message
     required: false
@@ -16,11 +16,11 @@ inputs:
   branch:
     description: Git branch name, where changes should be pushed too. Required if Action is used on the `pull_request` event
     required: false
-    default: ${{ github.head_ref }}
+    default: "${{ github.head_ref }}"
   repository:
     description: Local file path to the git repository. Defaults to the current directory (`.`)
     required: false
-    default: ${{ github.repository }}
+    default: "${{ github.repository }}"
   commit_user_name:
     description: Name used for the commit user
     required: false
@@ -32,7 +32,11 @@ inputs:
   commit_author:
     description: Value used for the commit author. Defaults to the username of whoever triggered this workflow run.
     required: false
-    default: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+    default: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
+  default_semver_update_type:
+    description: Default semver type for dependabot updates
+    required: false
+    default: 'patch'
 runs:
   using: "composite"
   steps:
@@ -40,9 +44,9 @@ runs:
       shell: bash
     - uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f # v3
       with:
-        repository: ${{ inputs.repository }}
-        ref: ${{ inputs.branch }}
-        token: ${{ inputs.github-token }}
+        repository: "${{ inputs.repository }}"
+        ref: "${{ inputs.branch }}"
+        token: "${{ inputs.github-token }}"
     - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
       with:
         node-version: 16
@@ -54,10 +58,11 @@ runs:
     - run: node "${{ github.action_path }}/dist/index.js"
       shell: bash
       env:
-        DEPENDABOT_METADATA: ${{ steps.dependabot-metadata.outputs.updated-dependencies-json }}
+        DEPENDABOT_METADATA: '${{ steps.dependabot-metadata.outputs.updated-dependencies-json }}'
+        DEFAULT_SEMVER_UPDATE_TYPE: '${{ inputs.default_semver_update_type }}'
     - run: |
-        git config --local user.name ${{ inputs.commit_user_name }}
-        git config --local user.email ${{ inputs.commit_user_email }}
+        git config --local user.name "${{ inputs.commit_user_name }}"
+        git config --local user.email "${{ inputs.commit_user_email }}"
         git add .changeset
         git commit --signoff --author="${{ inputs.commit_author }}" -m "${{ inputs.commit_message }}"
         git push --set-upstream origin "HEAD:${{ inputs.branch }}"
