@@ -24,11 +24,11 @@ inputs:
   commit_user_name:
     description: Name used for the commit user
     required: false
-    default: github-actions[bot]
+    default: github-actions
   commit_user_email:
     description: Email address used for the commit user
     required: false
-    default: 41898282+github-actions[bot]@users.noreply.github.com
+    default: github-actions@github.com
   commit_author:
     description: Value used for the commit author. Defaults to the username of whoever triggered this workflow run.
     required: false
@@ -47,6 +47,7 @@ runs:
         repository: "${{ inputs.repository }}"
         ref: "${{ inputs.branch }}"
         token: "${{ inputs.github-token }}"
+        fetch-depth: "0"
     - uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
       with:
         node-version: 16

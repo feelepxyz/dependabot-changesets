@@ -117,6 +117,9 @@ async function run(cwd = process.cwd()): Promise<void> {
       summary,
       releases,
     };
+    console.log(
+      `Writing changelog with summary "${summary}".`
+    );
     await writeChangeset(newChangeset, cwd);
     core.debug(JSON.stringify(newChangeset));
   } catch (error) {
