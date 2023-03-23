@@ -24,11 +24,11 @@ inputs:
   commit_user_name:
     description: Name used for the commit user
     required: false
-    default: github-actions
+    default: github-actions[bot]
   commit_user_email:
     description: Email address used for the commit user
     required: false
-    default: github-actions@github.com
+    default: 41898282+github-actions[bot]@users.noreply.github.com
   default_semver_update_type:
     description: Default semver type for dependabot updates
     required: false
