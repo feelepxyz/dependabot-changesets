@@ -152,6 +152,7 @@ async function run(cwd = process.cwd()): Promise<void> {
           console.log(
             `No dependencies where updated for package ${pkg.packageJson.name} so no changelog will be generated.`
           );
+          return;
         }
         const packageDepNames = packageDeps.map((dep) => dep.dependencyName);
         core.debug(
