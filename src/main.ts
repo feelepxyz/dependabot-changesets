@@ -3,7 +3,7 @@ import path from "path";
 import { Changeset, Config, PackageJSON, VersionType } from "@changesets/types";
 import writeChangeset from "@changesets/write";
 import * as git from "@changesets/git";
-import { getPackages } from "@manypkg/get-packages";
+import { getPackages, Package } from "@manypkg/get-packages";
 import getChangesets from "@changesets/read";
 import { read } from "@changesets/config";
 
@@ -85,6 +85,14 @@ async function run(cwd = process.cwd()): Promise<void> {
     const changedPackageJson = changedFiles.some((file) =>
       file.endsWith("package.json")
     );
+    // Attempt to find the root of the workspace if it's not in the top-level directory from the lockfile if present
+    const changedLockfile = changedFiles.filter(
+      (file) =>
+        !file.startsWith(".changeset/") && !file.endsWith("package.json")
+    )[0];
+    const lockfileDirectory = changedLockfile
+      ? `/${path.dirname(changedLockfile).replace(".", "")}`
+      : "/";
 
     if (!hasDirectProdDeps || !changedPackageJson) {
       if (!hasDirectProdDeps) {
@@ -142,23 +150,48 @@ async function run(cwd = process.cwd()): Promise<void> {
     );
 
     const type = process.env.DEFAULT_SEMVER_UPDATE_TYPE || "patch";
-    await Promise.all(
-      listableChanges.map(async (pkg) => {
-        const relativePkgDir = path.relative(cwd, pkg.dir);
-        const packageDeps = updatedDeps.filter(
-          (dep) => dep.directory === `/${relativePkgDir}`
+    const changes = listableChanges.reduce((map, pkg) => {
+      const relativePkgDir = path.relative(cwd, pkg.dir);
+      // Dependabot sets the dep.directory to the root of the workspace for monorepos
+      const packageDeps = updatedDeps.filter(
+        (dep) =>
+          dep.directory === `/${relativePkgDir}` ||
+          dep.directory === "/" ||
+          dep.directory === lockfileDirectory
+      );
+      if (packageDeps.length === 0) {
+        console.log(
+          `No dependencies where updated for package ${pkg.packageJson.name} so no changelog will be generated.`
         );
-        if (packageDeps.length === 0) {
-          console.log(
-            `No dependencies where updated for package ${pkg.packageJson.name} so no changelog will be generated.`
-          );
-          return;
-        }
+        return map;
+      }
+      const packages = map.get(packageDeps);
+      if (packages) {
+        packages.add(pkg);
+      } else {
+        const packagesSet: Set<Package> = new Set();
+        packagesSet.add(pkg);
+        map.set(packageDeps, packagesSet);
+      }
+      return map;
+    }, new Map() as Map<UpdatedDeps[], Set<Package>>);
+
+    await Promise.all(
+      Array.from(changes).map(async (map) => {
+        const [packageDeps, pkgs] = map;
+        const packages = Array.from(pkgs);
+        const releases = packages.map((pkg) => {
+          return {
+            name: pkg.packageJson.name,
+            type: type as VersionType,
+          };
+        });
+        const pkgNames = packages.map((pkg) => pkg.packageJson.name);
         const packageDepNames = packageDeps.map((dep) => dep.dependencyName);
         core.debug(
-          `Detected updated package dependencies for package ${
-            pkg.packageJson.name
-          }: ${packageDepNames.join(", ")}`
+          `Detected updated package dependencies for package ${pkgNames.join(
+            ", "
+          )}: ${packageDepNames.join(", ")}`
         );
 
         let summary;
@@ -167,30 +200,31 @@ async function run(cwd = process.cwd()): Promise<void> {
           summary = `Bump ${dep["dependencyName"]} from ${dep["prevVersion"]} to ${dep["newVersion"]}`;
         } else {
           const depsSummary = packageDeps
-            .map(({ dependencyName, prevVersion, newVersion }) => {
+            .map((dep) => {
+              const { dependencyName, prevVersion, newVersion } = dep;
               return `- ${dependencyName} from ${prevVersion} to ${newVersion}`;
             })
             .join("\n");
           summary = `Bump dependencies:\n${depsSummary}`;
         }
+
         if (!changedSummaries.includes(summary)) {
           const newChangeset: Changeset = {
             summary,
-            releases: [
-              {
-                name: pkg.packageJson.name,
-                type: type as VersionType,
-              },
-            ],
+            releases,
           };
           console.log(
-            `Creating changelog for package ${pkg.packageJson.name} with summary "${summary}".`
+            `Creating changelog for package(s) ${pkgNames.join(
+              ", "
+            )} with summary "${summary}".`
           );
           await writeChangeset(newChangeset, cwd);
           core.debug(JSON.stringify(newChangeset));
         } else {
           console.log(
-            `Changelog already exists for package ${pkg.packageJson.name} with summary "${summary}".`
+            `Changelog already exists for package(s) ${pkgNames.join(
+              ", "
+            )} with summary "${summary}".`
           );
         }
       })
