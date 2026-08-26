@@ -79,8 +79,11 @@ async function run(cwd = process.cwd()): Promise<void> {
     });
     core.debug(`Detected changed files: ${changedFiles.join(", ")}`);
 
+    const includeDevDependencies = process.env.INCLUDE_DEV_DEPENDENCIES === "true";
     const hasDirectProdDeps = updatedDeps.some(
-      (dep) => dep.dependencyType === "direct:production"
+      (dep) =>
+        dep.dependencyType === "direct:production" ||
+        (includeDevDependencies && dep.dependencyType === "direct:development")
     );
     const changedPackageJson = changedFiles.some((file) =>
       file.endsWith("package.json")
